@@ -32,3 +32,11 @@ run_test "trailing comment" "trailing" "test/sample.lua" \
 
 run_test "multiple files" "TODO" "test/sample.lua test/sample2.lua" \
   'length >= 4'
+
+# Injected languages: a TODO inside a fenced Python block in a Markdown file
+# must resolve in the injected language, and the context must span both the
+# outer (markdown) and inner (python) scopes.
+run_test "injected language" "TODO" "test/sample.md" \
+  '.[0].match.language == "python"
+   and (.[0].context | map(.language) | contains(["markdown", "python"]))
+   and (.[0].context[-1].text | contains("def process"))'

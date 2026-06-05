@@ -6,9 +6,10 @@ It leverages the same "context" queries used by [nvim-treesitter-context](https:
 
 ## Features
 
-- **Structural Grep**: Finds matches and identifies the logical code block they belong to.
+- **Structural Context**: Matches lines with a Vim regex (including "very magic" mode), then uses Treesitter to identify the logical code block (function, class, module) each match belongs to.
+- **Comment-Aware**: When a hit lands inside a comment, resolves the `target` — the code the comment actually refers to.
+- **Injected Languages**: Understands code embedded in other code (e.g. Python in a Markdown block, SQL in a string); context can span multiple languages.
 - **JSON Output**: Produces structured JSON, ideal for piping into tools like `jq`, `fzf`, or custom scripts.
-- **Language Aware**: Uses Treesitter to understand the structure of your code.
 
 ## Installation
 
@@ -32,15 +33,15 @@ nix profile install github:ck3d/context-grep
 context-grep <pattern> <file>...
 ```
 
-The `<pattern>` uses [Vim's regex syntax](https://neovim.io/doc/user/pattern.html), which differs from PCRE/extended grep: groups are `\(...\)`, alternation is `\|`, and quantifiers like `+` and `?` must be escaped (or prefix the pattern with `\v` for "very magic" mode). Only the first match on each line is reported.
+The `<pattern>` uses Vim's regex syntax, which differs from PCRE/extended grep: groups are `\(...\)`, alternation is `\|`, and quantifiers like `+` and `?` must be escaped (or prefix the pattern with `\v` for "very magic" mode). Only the first match on each line is reported.
 
-### Example
-
-Search for "TODO" in a Lua file and pretty-print with `jq`:
+You can pass multiple files (or a glob); matches from all of them are merged into a single JSON array:
 
 ```bash
-context-grep "TODO" sample.lua | jq .
+context-grep "TODO" test/*.lua | jq .
 ```
+
+Files that can't be read, have no Treesitter parser, or have no context query are skipped with a warning on stderr. `context-grep` exits with status `1` on invalid arguments or an invalid pattern.
 
 ### Output Format
 
@@ -50,49 +51,64 @@ The tool outputs a JSON array of match objects. Each object has the following fi
 | ---------- | ----------------------------------------------------------------------------- |
 | `file`     | The file the match was found in.                                              |
 | `match`    | The matched node (the enclosing comment when the hit is inside a comment).    |
-| `target`   | The nearest non-comment code sibling the comment refers to.                   |
+| `target`   | The nearest non-comment code sibling the comment refers to. Absent when none. |
 | `context`  | The enclosing structural scopes, ordered outermost → innermost. May be empty. |
 | `filetype` | The Neovim filetype detected for the file.                                    |
 
-The `match`, `target`, and `context` entries each carry the node's `text`, its 1-based start `line`, and its Treesitter `type`.
+Each `match`, `target`, and `context` entry (when present) carries the node's `text`, its 1-based start `line`, its Treesitter `type`, and the `language` it was parsed as.
 
-For example, running against [`test/sample.lua`](./test/sample.lua):
+For example, running against [`test/sample.md`](./test/sample.md):
 
 ```bash
-context-grep "inner comment" test/sample.lua | jq .
+context-grep "TODO" test/sample.md | jq .
 ```
 
 ```json
 [
   {
-    "file": "test/sample.lua",
+    "file": "test/sample.md",
     "match": {
-      "text": "-- TODO: inner comment",
-      "line": 12,
-      "type": "comment"
+      "text": "# TODO: handle empty input",
+      "line": 7,
+      "type": "comment",
+      "language": "python"
     },
     "target": {
-      "text": "return x",
-      "line": 13,
-      "type": "block"
+      "text": "return data",
+      "line": 8,
+      "type": "block",
+      "language": "python"
     },
     "context": [
       {
-        "text": "local function bar()",
-        "line": 11,
-        "type": "function_declaration"
+        "text": "# Sample doc",
+        "line": 1,
+        "type": "section",
+        "language": "markdown"
+      },
+      {
+        "text": "def process(data):\n    # TODO: handle empty input",
+        "line": 6,
+        "type": "function_definition",
+        "language": "python"
       }
     ],
-    "filetype": "lua"
+    "filetype": "markdown"
   }
 ]
 ```
+
+This match lives in a Python code block embedded in Markdown, so the `context` spans both languages — the outer Markdown `section` and the inner Python `function_definition`.
 
 ## Supported Languages
 
 `context-grep` supports any language for which a Treesitter "context" query is available. The Nix package pre-configures support for many languages, including:
 
 - C, C++, Rust, Go, Python, JavaScript, TypeScript, Nix, Lua, Java, and many [more](./supported-languages.nix).
+
+## Injected Languages
+
+`context-grep` resolves matches against [injected languages](https://neovim.io/doc/user/treesitter.html#treesitter-language-injections) — code embedded in another language, such as a fenced code block in Markdown or SQL inside a string. A match inside an injected region is understood in that injected language, and the `context` may span multiple languages (e.g. an outer Markdown section enclosing an inner Python function). The `language` field on each entry tells you which language it came from.
 
 ## Development
 

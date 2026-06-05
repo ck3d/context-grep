@@ -75,23 +75,53 @@ local function build_context_ranges(root, query, bufnr)
   return ranges
 end
 
--- Returns a list of context objects for a given row
-local function get_context_for_line(row, line_str, bufnr, root, context_ranges)
+-- Returns a list of context objects for a given row. Walks the chain of
+-- language trees covering the position -- the root tree plus any injected
+-- language trees (e.g. a fenced code block in Markdown, or SQL inside a Lua
+-- string) -- so each enclosing scope is resolved in the language it actually
+-- belongs to. `ranges_by_tree` maps each TSTree to the context ranges built
+-- from that tree's own language query.
+local function get_context_for_line(row, line_str, parser, ranges_by_tree, bufnr)
   local col = (line_str:find("%S") or 1) - 1
-  local node = root:named_descendant_for_range(row, col, row, col + 1)
-  if not node then return {} end
+  local range = { row, col, row, col + 1 }
+
+  -- Language trees covering the position, outermost first.
+  local chain = { parser }
+  while true do
+    local child
+    for _, c in pairs(chain[#chain]:children()) do
+      if c:contains(range) then
+        child = c
+        break
+      end
+    end
+    if not child then break end
+    chain[#chain + 1] = child
+  end
 
   local contexts = {}
   local seen_rows = {}
-  local p = node
-  while p do
-    local range = context_ranges[p:id()]
-    if range and not seen_rows[range[1]] then
-      table.insert(contexts, 1, { node = p, range = range })
-      seen_rows[range[1]] = true
+  -- Walk the innermost tree first so that when scopes share a start row we keep
+  -- the innermost one (matching nvim-treesitter-context's behaviour).
+  for k = #chain, 1, -1 do
+    local ltree = chain[k]
+    local tree = ltree:tree_for_range(range, { ignore_injections = true })
+    local node = tree and tree:root():named_descendant_for_range(range[1], range[2], range[3], range[4])
+    local tree_ranges = tree and ranges_by_tree[tree]
+    local p = node
+    while p do
+      local r = tree_ranges and tree_ranges[p:id()]
+      if r and not seen_rows[r[1]] then
+        contexts[#contexts + 1] = { node = p, range = r, language = ltree:lang() }
+        seen_rows[r[1]] = true
+      end
+      p = p:parent()
     end
-    p = p:parent()
   end
+
+  -- Order outermost -> innermost (ascending start row; rows are unique here
+  -- thanks to the seen_rows dedup above).
+  table.sort(contexts, function(a, b) return a.range[1] < b.range[1] end)
 
   local result = {}
   for _, item in ipairs(contexts) do
@@ -106,23 +136,38 @@ local function get_context_for_line(row, line_str, bufnr, root, context_ranges)
     table.insert(result, {
       text = table.concat(lines, "\n"),
       line = srow + 1,
-      type = item.node:type()
+      type = item.node:type(),
+      language = item.language
     })
   end
 
   return result
 end
 
-local function get_node_info(node, bufnr)
+local function get_node_info(node, bufnr, language)
   if not node then return nil end
   return {
     text = vim.treesitter.get_node_text(node, bufnr),
     line = (node:range()) + 1,
-    type = node:type()
+    type = node:type(),
+    language = language
   }
 end
 
 local all_results = {}
+
+-- Context queries are per-language and stable, so cache them across files and
+-- across the language trees of a single file. `false` records a miss so we only
+-- look up (and warn about) each missing language once.
+local context_query_cache = {}
+local function get_context_query(lang)
+  local cached = context_query_cache[lang]
+  if cached == nil then
+    cached = vim.treesitter.query.get(lang, "context") or false
+    context_query_cache[lang] = cached
+  end
+  return cached or nil
+end
 
 for i = 2, #args do
   local file = args[i]
@@ -150,30 +195,46 @@ for i = 2, #args do
     goto next_file
   end
 
-  local trees = parser:parse()
+  -- `true` parses injected languages too, so their trees are available below.
+  local trees = parser:parse(true)
   if not (trees and trees[1]) then
     io.stderr:write("Could not parse '" .. file .. "'\n")
     goto next_file
   end
-  local root = trees[1]:root()
-  local query = vim.treesitter.query.get(lang, "context")
-  if not query then
+
+  if not get_context_query(lang) then
     io.stderr:write("No context query found for '" .. lang .. "' in '" .. file .. "'\n")
     goto next_file
   end
 
-  local context_ranges = build_context_ranges(root, query, bufnr)
+  -- Build context ranges for every tree in the buffer (the root tree plus any
+  -- injected-language trees), keyed by the tree so an injected node resolves
+  -- against its own language's context query. Injected languages without a
+  -- context query simply contribute no context ranges.
+  local ranges_by_tree = {}
+  parser:for_each_tree(function(tstree, ltree)
+    local query = get_context_query(ltree:lang())
+    ranges_by_tree[tstree] = query and build_context_ranges(tstree:root(), query, bufnr) or {}
+  end)
+
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
   for j, line_str in ipairs(lines) do
     local row = j - 1
     local s, e = re:match_str(line_str)
     if s then
-      local node = root:descendant_for_range(row, s, row, e)
+      -- Resolve the match against the innermost language tree covering it, so a
+      -- hit inside an injected region (e.g. a comment in a fenced code block)
+      -- is understood in that injected language rather than the outer one.
+      local mrange = { row, s, row, e }
+      local mltree = parser:language_for_range(mrange)
+      local mtree = mltree:tree_for_range(mrange, { ignore_injections = true })
+      local node = mtree and mtree:root():descendant_for_range(row, s, row, e)
       -- A zero-width match or an out-of-range position yields no node; skip the
       -- line rather than indexing nil below (mirrors the guard in
       -- get_context_for_line).
       if not node then goto next_line end
+      local match_lang = mltree:lang()
 
       -- Find outermost comment node if the match is in a comment
       local match_node = node
@@ -201,9 +262,9 @@ for i = 2, #args do
 
       table.insert(all_results, {
         file = file,
-        match = get_node_info(match_node, bufnr),
-        target = get_node_info(target_node, bufnr),
-        context = get_context_for_line(row, line_str, bufnr, root, context_ranges),
+        match = get_node_info(match_node, bufnr, match_lang),
+        target = get_node_info(target_node, bufnr, match_lang),
+        context = get_context_for_line(row, line_str, parser, ranges_by_tree, bufnr),
         filetype = ft
       })
     end
