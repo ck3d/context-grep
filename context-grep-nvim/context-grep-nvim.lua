@@ -1,7 +1,14 @@
 local args = _G.arg
 
+local ts_dirs = os.getenv("CONTEXT_GREP_NVIM_PLUGIN_DIRS")
+if ts_dirs then
+  for path in string.gmatch(ts_dirs, "[^:]+") do
+    vim.opt.rtp:append(path)
+  end
+end
+
 if #args < 2 then
-  io.stderr:write("Usage: context-grep <pattern> <file>...\n")
+  io.stderr:write("Usage: context-grep-nvim <pattern> <file>...\n")
   os.exit(1)
 end
 
@@ -25,9 +32,13 @@ local function first_named_sibling(node, method, srow)
   while curr do
     if srow then
       local psrow, _, perow = curr:range()
-      if psrow ~= srow and perow ~= srow then break end
+      if psrow ~= srow and perow ~= srow then
+        break
+      end
     end
-    if not is_comment(curr) then return curr end
+    if not is_comment(curr) then
+      return curr
+    end
     curr = curr[method](curr)
   end
 end
@@ -44,7 +55,9 @@ local function build_context_ranges(root, query, bufnr)
     local context_node
     local start_row, start_col, end_row, end_col
     for id, n in pairs(match) do
-      if type(n) == "table" then n = n[#n] end
+      if type(n) == "table" then
+        n = n[#n]
+      end
       local name = captures[id]
       local msrow, mscol, merow, mecol = n:range()
 
@@ -95,7 +108,9 @@ local function get_context_for_line(row, line_str, parser, ranges_by_tree, bufnr
         break
       end
     end
-    if not child then break end
+    if not child then
+      break
+    end
     chain[#chain + 1] = child
   end
 
@@ -121,13 +136,17 @@ local function get_context_for_line(row, line_str, parser, ranges_by_tree, bufnr
 
   -- Order outermost -> innermost (ascending start row; rows are unique here
   -- thanks to the seen_rows dedup above).
-  table.sort(contexts, function(a, b) return a.range[1] < b.range[1] end)
+  table.sort(contexts, function(a, b)
+    return a.range[1] < b.range[1]
+  end)
 
   local result = {}
   for _, item in ipairs(contexts) do
     local r = item.range
     local srow, erow, ecol = r[1], r[3], r[4]
-    if ecol == 0 then erow, ecol = erow - 1, -1 end
+    if ecol == 0 then
+      erow, ecol = erow - 1, -1
+    end
 
     local lines = vim.api.nvim_buf_get_text(bufnr, srow, 0, erow, ecol, {})
     while #lines > 0 and not lines[#lines]:match("%S") do
@@ -137,7 +156,7 @@ local function get_context_for_line(row, line_str, parser, ranges_by_tree, bufnr
       text = table.concat(lines, "\n"),
       line = srow + 1,
       type = item.node:type(),
-      language = item.language
+      language = item.language,
     })
   end
 
@@ -145,12 +164,14 @@ local function get_context_for_line(row, line_str, parser, ranges_by_tree, bufnr
 end
 
 local function get_node_info(node, bufnr, language)
-  if not node then return nil end
+  if not node then
+    return nil
+  end
   return {
     text = vim.treesitter.get_node_text(node, bufnr),
     line = (node:range()) + 1,
     type = node:type(),
-    language = language
+    language = language,
   }
 end
 
@@ -233,7 +254,9 @@ for i = 2, #args do
       -- A zero-width match or an out-of-range position yields no node; skip the
       -- line rather than indexing nil below (mirrors the guard in
       -- get_context_for_line).
-      if not node then goto next_line end
+      if not node then
+        goto next_line
+      end
       local match_lang = mltree:lang()
 
       -- Find outermost comment node if the match is in a comment
@@ -265,7 +288,7 @@ for i = 2, #args do
         match = get_node_info(match_node, bufnr, match_lang),
         target = get_node_info(target_node, bufnr, match_lang),
         context = get_context_for_line(row, line_str, parser, ranges_by_tree, bufnr),
-        filetype = ft
+        filetype = ft,
       })
     end
     ::next_line::

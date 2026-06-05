@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 <executable-or-nix-target>"
+  exit 1
+fi
+
+target="$1"
+
+# If target is a relative path, resolve it to an absolute path so it still works after we change directory
+if [[ "$target" != \#* && -e "$target" ]]; then
+  target="$(realpath "$target")"
+fi
+
+# Default SAMPLE_DIR to the directory where the script is located
+SAMPLE_DIR="${SAMPLE_DIR:-$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")}"
+
+cd "$SAMPLE_DIR"
+
+# run_test NAME QUERY FILES ASSERTION
+#   Runs context-grep and checks ASSERTION (a jaq boolean filter) against the
+#   JSON output. Prints the output and exits on failure.
+run_test() {
+  local name="$1" query="$2" files="$3" assertion="$4"
+  echo "Testing: $name ($target)"
+  local output
+
+  if [[ "$target" == [.\#]* ]]; then
+    # shellcheck disable=SC2086
+    output=$(nix run "$target" -- "$query" $files)
+  else
+    # shellcheck disable=SC2086
+    output=$("$target" "$query" $files)
+  fi
+
+  if jaq -e "$assertion" >/dev/null <<<"$output"; then
+    echo "✓ Success: $name ($target)"
+  else
+    echo "✗ Failure: $name ($target)"
+    jaq . <<<"$output"
+    exit 1
+  fi
+}
+
+run_test "match this" "match this" "sample.lua" \
+  '(.[0].target.text | contains("local function bar()")) and .[0].file == "sample.lua"'
+
+run_test "inner comment" "inner comment" "sample.lua" \
+  '.[0].target.text == "return x"'
+
+run_test "trailing comment" "trailing" "sample.lua" \
+  '.[0].target.text == "local y = 1"'
+
+run_test "multiple files" "TODO" "sample.lua sample2.lua" \
+  'length >= 4'
+
+# Injected languages: a TODO inside a fenced Python block in a Markdown file
+# must resolve in the injected language, and the context must span both the
+# outer (markdown) and inner (python) scopes.
+run_test "injected language" "TODO" "sample.md" \
+  '.[0].match.language == "python"
+   and (.[0].context | map(.language) | contains(["markdown", "python"]))
+   and (.[0].context[-1].text | contains("def process"))'
