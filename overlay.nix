@@ -9,6 +9,7 @@ in
     context-grep-rs-wrapped = callPackage ./context-grep-rs/wrapper.nix { };
     nvim-plugin-grammars = callPackage ./nvim-plugin-grammars { };
     test-harness = callPackage ./test-harness { };
+    benchmark = callPackage ./benchmark { };
     default = final.context-grep.context-grep-rs-wrapped;
   };
 }
