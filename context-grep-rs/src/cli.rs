@@ -26,8 +26,8 @@ pub struct Args {
 
 #[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum Format {
-    #[default]
     Json,
+    #[default]
     Pretty,
 }
 

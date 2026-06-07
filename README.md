@@ -13,23 +13,30 @@ It supports standard PCRE-like syntax.
 
 ### Output Format
 
-The tool outputs a JSON array of match objects.
-Each object has the following fields:
-
-| Field      | Description                                                                   |
-| ---------- | ----------------------------------------------------------------------------- |
-| `file`     | The file the match was found in.                                              |
-| `filetype` | The detected filetype                                                         |
-| `match`    | The matched node (the enclosing comment when the hit is inside a comment).    |
-| `target`   | The nearest non-comment code sibling the comment refers to. Absent when none. |
-| `context`  | The enclosing structural scopes, ordered outermost → innermost. May be empty. |
-
-Each `match`, `target`, and `context` entry (when present) carries the node's `text`, its 1-based start `line`, its Treesitter `type`, and the `language` it was parsed as.
-
-For example, running against [`test-harness/sample.md`](./test-harness/sample.md):
+By default, `context-grep` outputs a human-readable, colorized, and structured representation of the matches.
+For example, running against [`test-harness/sample.md`](./test-harness/sample.md) with colors and icons disabled:
 
 ```bash
-context-grep "TODO" test-harness/sample.md
+context-grep --color never --no-icons "TODO" test-harness/sample.md
+```
+
+```text
+test-harness/sample.md:7 markdown
+  1│  # Sample doc
+   ┆
+  6│  def process(data):
+  7│      # TODO: handle empty input
+  7│  # TODO: handle empty input
+  8│  return data
+```
+
+### JSON Output Format
+
+Alternatively, you can output a JSON array of match objects using the `--format json` flag.
+For example:
+
+```bash
+context-grep --format json "TODO" test-harness/sample.md
 ```
 
 ```json
@@ -67,24 +74,17 @@ context-grep "TODO" test-harness/sample.md
 ]
 ```
 
-### Pretty Print Format
+Each object has the following fields:
 
-Alternatively, you can output the search results in a human-readable, colorized, and structured format using the `--format pretty` flag.
-For example:
+| Field      | Description                                                                   |
+| ---------- | ----------------------------------------------------------------------------- |
+| `file`     | The file the match was found in.                                              |
+| `filetype` | The detected filetype                                                         |
+| `match`    | The matched node (the enclosing comment when the hit is inside a comment).    |
+| `target`   | The nearest non-comment code sibling the comment refers to. Absent when none. |
+| `context`  | The enclosing structural scopes, ordered outermost → innermost. May be empty. |
 
-```bash
-context-grep --format pretty --color never --no-icons "TODO" test-harness/sample.md
-```
-
-```text
-test-harness/sample.md:7 markdown
-  1│  # Sample doc
-   ┆
-  6│  def process(data):
-  7│      # TODO: handle empty input
-  7│  # TODO: handle empty input
-  8│  return data
-```
+Each `match`, `target`, and `context` entry (when present) carries the node's `text`, its 1-based start `line`, its Treesitter `type`, and the `language` it was parsed as.
 
 ## Supported Languages
 

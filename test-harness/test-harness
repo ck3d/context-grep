@@ -27,12 +27,17 @@ run_test() {
   echo "Testing: $name ($target)"
   local output
 
+  local extra_args=()
+  if [[ "$target" != *nvim* ]]; then
+    extra_args+=("--format" "json")
+  fi
+
   if [[ "$target" == [.\#]* ]]; then
     # shellcheck disable=SC2086
-    output=$(nix run "$target" -- "$query" $files)
+    output=$(nix run "$target" -- "${extra_args[@]}" "$query" $files)
   else
     # shellcheck disable=SC2086
-    output=$("$target" "$query" $files)
+    output=$("$target" "${extra_args[@]}" "$query" $files)
   fi
 
   if jaq -e "$assertion" >/dev/null <<<"$output"; then
