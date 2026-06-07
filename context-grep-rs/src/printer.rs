@@ -52,7 +52,7 @@ pub fn pretty_print(results: &[MatchResult], styles: &Styles, no_icons: bool) {
 
             if let Some(last) = last_line {
                 if start > last + 1 {
-                    println!("  {} {}", " ".repeat(line_width), styles.dim("┆"));
+                    println!("  {}{}", " ".repeat(line_width), styles.dim("┆"));
                 }
             }
 

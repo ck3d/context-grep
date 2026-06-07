@@ -67,6 +67,25 @@ context-grep "TODO" test-harness/sample.md
 ]
 ```
 
+### Pretty Print Format
+
+Alternatively, you can output the search results in a human-readable, colorized, and structured format using the `--format pretty` flag.
+For example:
+
+```bash
+context-grep --format pretty --color never --no-icons "TODO" test-harness/sample.md
+```
+
+```text
+test-harness/sample.md:7 markdown
+  1│  # Sample doc
+   ┆
+  6│  def process(data):
+  7│      # TODO: handle empty input
+  7│  # TODO: handle empty input
+  8│  return data
+```
+
 ## Supported Languages
 
 `context-grep` supports any language for which an [nvim-treesitter-context](https://github.com/nvim-treesitter/nvim-treesitter-context) query is available.
