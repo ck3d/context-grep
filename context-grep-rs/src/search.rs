@@ -6,7 +6,7 @@ use std::path::Path;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::{Node, Parser as TSParser, Query, QueryCursor};
 
-use crate::lang::{LanguageManager, LANG_MAPPINGS};
+use crate::lang::{LANG_MAPPINGS, LanguageManager};
 use crate::models::{MatchResult, NodeInfo};
 
 pub struct TreeLayer {
@@ -22,7 +22,7 @@ impl TreeLayer {
             || self
                 .ranges
                 .iter()
-                .any(|r| byte_offset >= r.start_byte && byte_offset < r.end_byte)
+                .any(|r| (r.start_byte..r.end_byte).contains(&byte_offset))
     }
 }
 
@@ -53,8 +53,7 @@ pub fn process_file(
     };
 
     let mut layers = Vec::new();
-    let mut queue = Vec::new();
-    queue.push((lang_name.to_string(), vec![]));
+    let mut queue = vec![(lang_name.to_string(), vec![])];
 
     while let Some((lname, ranges)) = queue.pop() {
         let Ok(lang) = lang_manager.get_language(&lname) else {
@@ -127,12 +126,10 @@ pub fn process_file(
             let match_point = tree_sitter::Point::new(row, start_col);
             let match_end_point = tree_sitter::Point::new(row, end_col);
 
-            let mut best_layer = None;
-            for layer in &layers {
-                if layer.covers(byte_offset) && (best_layer.is_none() || !layer.ranges.is_empty()) {
-                    best_layer = Some(layer);
-                }
-            }
+            let best_layer = layers
+                .iter()
+                .find(|layer| layer.covers(byte_offset) && !layer.ranges.is_empty())
+                .or_else(|| layers.iter().find(|layer| layer.covers(byte_offset)));
 
             let Some(layer) = best_layer else { continue };
             let root = layer.tree.root_node();
@@ -143,14 +140,12 @@ pub fn process_file(
             };
 
             let mut match_node = node;
-            let mut ancestor = Some(node);
-            while let Some(curr) = ancestor {
+            while let Some(curr) = match_node.parent() {
                 if is_comment(curr) {
                     match_node = curr;
-                } else if is_comment(match_node) {
+                } else {
                     break;
                 }
-                ancestor = curr.parent();
             }
 
             let match_info = get_node_info(match_node, &content, match_lang);
@@ -160,10 +155,7 @@ pub fn process_file(
             let mut contexts = Vec::new();
             let mut seen_rows = std::collections::HashSet::new();
 
-            for layer in &layers {
-                if !layer.covers(byte_offset) {
-                    continue;
-                }
+            for layer in layers.iter().filter(|l| l.covers(byte_offset)) {
                 let mut ancestor = layer
                     .tree
                     .root_node()
@@ -198,7 +190,11 @@ pub fn process_file(
     Ok(())
 }
 
-pub fn build_context_ranges(root: Node, query: &Query, content: &str) -> HashMap<usize, ContextRange> {
+pub fn build_context_ranges(
+    root: Node,
+    query: &Query,
+    content: &str,
+) -> HashMap<usize, ContextRange> {
     let mut cursor = QueryCursor::new();
     let mut matches = cursor.matches(query, root, content.as_bytes());
     let mut ranges = HashMap::new();
@@ -267,7 +263,12 @@ pub fn get_node_info(node: Node, content: &str, language: &str) -> NodeInfo {
     }
 }
 
-pub fn get_context_info(node: Node, range: &ContextRange, content: &str, language: &str) -> NodeInfo {
+pub fn get_context_info(
+    node: Node,
+    range: &ContextRange,
+    content: &str,
+    language: &str,
+) -> NodeInfo {
     let text = get_text_range(content, range);
     NodeInfo {
         text,
@@ -283,8 +284,8 @@ pub fn get_text_range(content: &str, range: &ContextRange) -> String {
         return String::new();
     }
 
-    let mut result = String::new();
     let end_row = range.end_row.min(lines.len().saturating_sub(1));
+    let mut result = String::with_capacity((end_row - range.start_row + 1) * 80);
 
     for r in range.start_row..=end_row {
         let line = lines[r];

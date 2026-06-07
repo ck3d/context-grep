@@ -10,7 +10,7 @@ pub struct MatchResult {
     pub filetype: String,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize)]
 pub struct NodeInfo {
     pub text: String,
     pub line: usize,
@@ -19,7 +19,7 @@ pub struct NodeInfo {
     pub language: String,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub enum Role {
     Match,
     Target,

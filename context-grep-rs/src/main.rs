@@ -17,15 +17,14 @@ use printer::{Styles, pretty_print};
 use search::process_file;
 
 fn main() -> Result<()> {
-    let args = Args::parse();
+    let mut args = Args::parse();
     let re = Regex::new(&args.pattern).context("Invalid regex pattern")?;
 
-    let mut treesitter_dirs = args.treesitter_dirs.clone();
-    if treesitter_dirs.is_empty() {
-        treesitter_dirs.push(PathBuf::from("."));
+    if args.treesitter_dirs.is_empty() {
+        args.treesitter_dirs.push(PathBuf::from("."));
     }
 
-    let mut lang_manager = LanguageManager::new(treesitter_dirs);
+    let mut lang_manager = LanguageManager::new(args.treesitter_dirs);
     let mut all_results = Vec::new();
 
     for file_path in args.files {
@@ -37,17 +36,12 @@ fn main() -> Result<()> {
     all_results.sort_by(|a, b| {
         a.file
             .cmp(&b.file)
-            .then_with(|| a.match_info.line.cmp(&b.match_info.line))
+            .then(a.match_info.line.cmp(&b.match_info.line))
     });
 
     match args.format {
-        Format::Json => {
-            println!("{}", serde_json::to_string(&all_results)?);
-        }
-        Format::Pretty => {
-            let styles = Styles::new(args.color);
-            pretty_print(&all_results, &styles, args.no_icons);
-        }
+        Format::Json => println!("{}", serde_json::to_string(&all_results)?),
+        Format::Pretty => pretty_print(&all_results, &Styles::new(args.color), args.no_icons),
     }
 
     Ok(())

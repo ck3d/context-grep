@@ -1,6 +1,6 @@
-use std::io::IsTerminal;
 use crate::cli::ColorChoice;
 use crate::models::{MatchResult, NodeInfo, Role, StyledNode};
+use std::io::IsTerminal;
 
 pub fn pretty_print(results: &[MatchResult], styles: &Styles, no_icons: bool) {
     if results.is_empty() {
@@ -8,12 +8,12 @@ pub fn pretty_print(results: &[MatchResult], styles: &Styles, no_icons: bool) {
         return;
     }
 
-    let mut max_line_val = 1;
-    for result in results {
-        for s_node in get_result_nodes(result) {
-            max_line_val = max_line_val.max(node_max_line(s_node.node));
-        }
-    }
+    let max_line_val = results
+        .iter()
+        .flat_map(get_result_nodes)
+        .map(|sn| node_max_line(sn.node))
+        .max()
+        .unwrap_or(1);
     let line_width = max_line_val.to_string().len();
 
     for result in results {
@@ -23,17 +23,17 @@ pub fn pretty_print(results: &[MatchResult], styles: &Styles, no_icons: bool) {
         } else if !result.filetype.is_empty() {
             format!(" {}", styles.dim(&result.filetype))
         } else {
-            "".to_string()
+            String::new()
         };
         println!("{}{}", header_str, header_icon);
 
         let mut styled_nodes = get_result_nodes(result);
         styled_nodes.sort_by_key(|sn| sn.node.line);
 
-        let mut languages = std::collections::HashSet::new();
-        for sn in &styled_nodes {
-            languages.insert(&sn.node.language);
-        }
+        let mut languages: std::collections::HashSet<&str> = styled_nodes
+            .iter()
+            .map(|sn| sn.node.language.as_str())
+            .collect();
         if !result.filetype.is_empty() {
             languages.insert(&result.filetype);
         }
@@ -52,24 +52,22 @@ pub fn pretty_print(results: &[MatchResult], styles: &Styles, no_icons: bool) {
 
             if let Some(last) = last_line {
                 if start > last + 1 {
-                    let padding = " ".repeat(line_width);
-                    println!("  {} {}", padding, styles.dim("┆"));
+                    println!("  {} {}", " ".repeat(line_width), styles.dim("┆"));
                 }
             }
 
             for (offset, line) in lines.iter().enumerate() {
                 let current_line_num = start + offset;
 
-                let icon_str = if offset == 0 && show_inner_icons && !no_icons {
-                    get_lang_icon(&sn.node.language)
+                let icon_col = if offset == 0 && show_inner_icons && !no_icons {
+                    let icon = get_lang_icon(&sn.node.language);
+                    if icon.is_empty() {
+                        "  ".to_string()
+                    } else {
+                        format!("{} ", styles.dim(icon))
+                    }
                 } else {
-                    ""
-                };
-
-                let icon_col = if icon_str.is_empty() {
                     "  ".to_string()
-                } else {
-                    format!("{} ", styles.dim(icon_str))
                 };
 
                 let line_num_col = format!("{:>width$}", current_line_num, width = line_width);
@@ -149,22 +147,27 @@ impl Styles {
 }
 
 pub fn get_result_nodes(result: &MatchResult) -> Vec<StyledNode<'_>> {
-    let mut nodes = vec![StyledNode {
+    let mut nodes = Vec::with_capacity(1 + result.target.is_some() as usize + result.context.len());
+
+    nodes.push(StyledNode {
         node: &result.match_info,
         role: Role::Match,
-    }];
+    });
+
     if let Some(ref target) = result.target {
         nodes.push(StyledNode {
             node: target,
             role: Role::Target,
         });
     }
+
     for ctx in &result.context {
         nodes.push(StyledNode {
             node: ctx,
             role: Role::Context,
         });
     }
+
     nodes
 }
 

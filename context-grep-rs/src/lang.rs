@@ -32,8 +32,10 @@ impl LanguageManager {
         let path = self
             .treesitter_dirs
             .iter()
-            .map(|dir| dir.join("parser").join(&so_name))
-            .find(|p| p.exists())
+            .find_map(|dir| {
+                let p = dir.join("parser").join(&so_name);
+                p.exists().then_some(p)
+            })
             .ok_or_else(|| {
                 anyhow!(
                     "Grammar not found for {} in {:?}",
@@ -58,7 +60,12 @@ impl LanguageManager {
         Ok(lang)
     }
 
-    pub fn get_query(&mut self, lang_name: &str, lang: Language, query_name: &str) -> Option<&Query> {
+    pub fn get_query(
+        &mut self,
+        lang_name: &str,
+        lang: Language,
+        query_name: &str,
+    ) -> Option<&Query> {
         let key = format!("{}:{}", lang_name, query_name);
         if !self.queries.contains_key(&key) {
             let query = self.load_query(lang_name, &lang, query_name);
@@ -68,15 +75,11 @@ impl LanguageManager {
     }
 
     fn load_query(&self, lang_name: &str, lang: &Language, file_name: &str) -> Option<Query> {
-        for dir in &self.treesitter_dirs {
+        self.treesitter_dirs.iter().find_map(|dir| {
             let query_path = dir.join("queries").join(lang_name).join(file_name);
-            if let Ok(source) = fs::read_to_string(&query_path) {
-                if let Ok(query) = Query::new(lang, &source) {
-                    return Some(query);
-                }
-            }
-        }
-        None
+            let source = fs::read_to_string(&query_path).ok()?;
+            Query::new(lang, &source).ok()
+        })
     }
 }
 

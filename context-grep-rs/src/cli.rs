@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -14,24 +14,26 @@ pub struct Args {
     )]
     pub treesitter_dirs: Vec<PathBuf>,
 
-    #[arg(long, value_enum, default_value_t = Format::Json)]
+    #[arg(long, value_enum, default_value_t)]
     pub format: Format,
 
-    #[arg(long, value_enum, default_value_t = ColorChoice::Auto)]
+    #[arg(long, value_enum, default_value_t)]
     pub color: ColorChoice,
 
     #[arg(long)]
     pub no_icons: bool,
 }
 
-#[derive(clap::ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum Format {
+    #[default]
     Json,
     Pretty,
 }
 
-#[derive(clap::ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum ColorChoice {
+    #[default]
     Auto,
     Always,
     Never,
