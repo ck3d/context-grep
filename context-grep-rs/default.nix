@@ -32,9 +32,7 @@ let
 
       passthru.devShell = craneLib.devShell {
         inherit CONTEXT_GREP_NVIM_PLUGIN_DIRS;
-        packages = [
-          context-grep.test-harness
-        ];
+        inputsFrom = [ pkg.passthru.checks.test-harness ];
       };
 
       passthru.checks = {
@@ -47,12 +45,16 @@ let
             inherit cargoArtifacts;
           }
         );
-        test-harness = runCommand "context-grep-test-harness-check" {
-          inherit CONTEXT_GREP_NVIM_PLUGIN_DIRS;
-        } ''
-          ${lib.getExe context-grep.test-harness} ${lib.getExe pkg}
-          touch $out
-        '';
+        test-harness =
+          runCommand "context-grep-test-harness-check"
+            {
+              inherit CONTEXT_GREP_NVIM_PLUGIN_DIRS;
+              nativeBuildInputs = [ context-grep.test-harness ];
+            }
+            ''
+              test-harness ${lib.getExe pkg}
+              touch $out
+            '';
       };
 
       meta.mainProgram = "context-grep";

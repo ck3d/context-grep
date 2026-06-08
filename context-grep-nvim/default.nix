@@ -41,12 +41,9 @@ let
     passthru.devShell = mkShellNoCC {
       inherit CONTEXT_GREP_NVIM_PLUGIN_DIRS;
       packages = [
-        context-grep.test-harness
         neovim-unwrapped
       ];
-      inputsFrom = [
-        pkg.checks.fmt
-      ];
+      inputsFrom = builtins.attrValues pkg.checks;
     };
 
     passthru.checks = {
@@ -63,9 +60,10 @@ let
         runCommand "context-grep-nvim-test-harness-check"
           {
             inherit CONTEXT_GREP_NVIM_PLUGIN_DIRS;
+            nativeBuildInputs = [ context-grep.test-harness ];
           }
           ''
-            ${lib.getExe context-grep.test-harness} ${lib.getExe pkg}
+            test-harness ${lib.getExe pkg}
             touch $out
           '';
     };

@@ -42,12 +42,12 @@
         system:
         let
           packages = lib.mapAttrs' (n: lib.nameValuePair "package-${n}") self.packages.${system};
-          pkgDevShells = lib.mapAttrs' (n: pkg: lib.nameValuePair "package-${n}.devShell" pkg.devShell) (
+          pkgDevShells = lib.mapAttrs' (n: pkg: lib.nameValuePair "package-${n}-devShell" pkg.devShell) (
             lib.filterAttrs (n: pkg: pkg ? devShell) self.packages.${system}
           );
           pkgChecks = lib.concatMapAttrs (
             n: pkg:
-            lib.mapAttrs' (c: checkPkg: lib.nameValuePair "package-${n}.checks.${c}" checkPkg) (
+            lib.mapAttrs' (c: checkPkg: lib.nameValuePair "package-${n}-checks-${c}" checkPkg) (
               pkg.passthru.checks or { }
             )
           ) self.packages.${system};
