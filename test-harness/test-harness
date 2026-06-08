@@ -14,8 +14,20 @@ if [[ "$target" != \#* && -e "$target" ]]; then
   target="$(realpath "$target")"
 fi
 
+# Build the invocation once: a nix flake target (starting with '.' or '#') is
+# run via `nix run`; anything else is treated as an executable.
+if [[ "$target" == [.\#]* ]]; then
+  cmd=(nix run "$target" --)
+else
+  cmd=("$target")
+fi
+
+# The neovim target emits JSON itself; every other target needs --format json.
+extra_args=()
+[[ "$target" == *nvim* ]] || extra_args=(--format json)
+
 # Default SAMPLE_DIR to the directory where the script is located
-SAMPLE_DIR="${SAMPLE_DIR:-$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")}"
+SAMPLE_DIR="${SAMPLE_DIR:-$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/sample-data}"
 
 cd "$SAMPLE_DIR"
 
@@ -27,18 +39,8 @@ run_test() {
   echo "Testing: $name ($target)"
   local output
 
-  local extra_args=()
-  if [[ "$target" != *nvim* ]]; then
-    extra_args+=("--format" "json")
-  fi
-
-  if [[ "$target" == [.\#]* ]]; then
-    # shellcheck disable=SC2086
-    output=$(nix run "$target" -- "${extra_args[@]}" "$query" $files)
-  else
-    # shellcheck disable=SC2086
-    output=$("$target" "${extra_args[@]}" "$query" $files)
-  fi
+  # shellcheck disable=SC2086
+  output=$("${cmd[@]}" "${extra_args[@]}" "$query" $files)
 
   if jaq -e "$assertion" >/dev/null <<<"$output"; then
     echo "✓ Success: $name ($target)"

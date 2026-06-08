@@ -14,14 +14,14 @@ It supports standard PCRE-like syntax.
 ### Output Format
 
 By default, `context-grep` outputs a human-readable, colorized, and structured representation of the matches.
-For example, running against [`test-harness/sample.md`](./test-harness/sample.md) with colors and icons disabled:
+For example, running against [`test-harness/sample-data/sample.md`](./test-harness/sample-data/sample.md) with colors and icons disabled:
 
 ```bash
-context-grep --color never --no-icons "TODO" test-harness/sample.md
+context-grep --color never --no-icons "TODO" test-harness/sample-data/sample.md
 ```
 
 ```text
-test-harness/sample.md:7 markdown
+test-harness/sample-data/sample.md:7 markdown
   1│  # Sample doc
    ┆
   6│  def process(data):
@@ -36,13 +36,13 @@ Alternatively, you can output a JSON array of match objects using the `--format 
 For example:
 
 ```bash
-context-grep --format json "TODO" test-harness/sample.md
+context-grep --format json "TODO" test-harness/sample-data/sample.md
 ```
 
 ```json
 [
   {
-    "file": "test-harness/sample.md",
+    "file": "test-harness/sample-data/sample.md",
     "match": {
       "text": "# TODO: handle empty input",
       "line": 7,

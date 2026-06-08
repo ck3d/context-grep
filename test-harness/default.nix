@@ -18,10 +18,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [ makeWrapper ];
 
-  installPhase = ''
-    mkdir -p $out/bin $out/share/test-harness
-    cp test-harness $out/bin/test-harness
-    cp sample.lua sample2.lua sample.md $out/share/test-harness/
+  postFixup = ''
     wrapProgram $out/bin/test-harness \
       --set SAMPLE_DIR "$out/share/test-harness" \
       --prefix PATH : ${lib.makeBinPath [ jaq ]}
