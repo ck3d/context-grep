@@ -25,13 +25,6 @@ let
 
     inherit CONTEXT_GREP_NVIM_PLUGIN_DIRS;
 
-    installPhase = ''
-      mkdir -p $out/bin
-      cp context-grep-nvim $out/bin/context-grep-nvim
-      cp context-grep-nvim.lua $out/bin/context-grep-nvim.lua
-      chmod +x $out/bin/context-grep-nvim
-    '';
-
     postFixup = ''
       wrapProgram $out/bin/context-grep-nvim \
         --set CONTEXT_GREP_NVIM_PLUGIN_DIRS "$CONTEXT_GREP_NVIM_PLUGIN_DIRS" \
