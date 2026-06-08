@@ -98,4 +98,4 @@ A match inside an injected region is understood in that injected language, and t
 
 ## Development
 
-Use the `pre-commit` scripts for iterative per package development and `nix flake check` for a full repository check.
+Use the `dev-check.sh` for iterative per package development and `nix flake check` for a full repository check.

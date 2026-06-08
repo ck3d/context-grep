@@ -8,10 +8,6 @@ set -x
 
 eval "$(direnv export bash)"
 
-cargo fmt
+stylua --check context-grep-nvim.lua
 
-cargo build
-
-cargo clippy -- -D warnings
-
-test-harness target/debug/context-grep
+test-harness ./context-grep-nvim
