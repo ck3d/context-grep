@@ -11,9 +11,14 @@ stdenv.mkDerivation (finalAttrs: {
   pname = "context-grep-test-harness";
   version = "0.1.0";
 
-  src = lib.fileset.toSource {
-    root = ./.;
-    fileset = lib.fileset.fileFilter (file: !file.hasExt "nix") ./.;
+  src = lib.cleanSourceWith {
+    src = ./.;
+    filter =
+      path: _type:
+      !(lib.elem (baseNameOf path) [
+        "default.nix"
+        ".envrc"
+      ]);
   };
 
   nativeBuildInputs = [ makeWrapper ];

@@ -3,6 +3,9 @@
   hyperfine,
   context-grep,
 }:
+let
+  sampleDir = "${context-grep.test-harness}/share/test-harness";
+in
 runCommand "context-grep-benchmark"
   {
     nativeBuildInputs = [
@@ -12,10 +15,8 @@ runCommand "context-grep-benchmark"
     ];
   }
   ''
-    SAMPLE_DIR="${context-grep.test-harness}/share/test-harness"
-
     hyperfine --warmup 3 \
       --export-markdown "$out" \
-      "context-grep-nvim 'TODO' $SAMPLE_DIR/*" \
-      "context-grep 'TODO' $SAMPLE_DIR/*"
+      "context-grep-nvim 'TODO' ${sampleDir}/*" \
+      "context-grep 'TODO' ${sampleDir}/*"
   ''

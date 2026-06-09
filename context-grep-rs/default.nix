@@ -8,20 +8,23 @@
   runCommand,
 }:
 let
-  src = lib.fileset.toSource {
-    root = ./.;
-    fileset = lib.fileset.fileFilter (file: !file.hasExt "nix") ./.;
-  };
-
   commonArgs = {
-    inherit src;
-    pname = "context-grep-rs-unwrapped";
-    version = "0.1.0";
+    src = lib.cleanSourceWith {
+      src = ./.;
+      filter =
+        path: _type:
+        !(lib.elem (baseNameOf path) [
+          "default.nix"
+          ".envrc"
+          ".gitignore"
+        ]);
+    };
+
     nativeBuildInputs = [ pkg-config ];
     buildInputs = [ tree-sitter ];
   };
 
-  CONTEXT_GREP_NVIM_PLUGIN_DIRS = "${context-grep.nvim-plugin-grammars}:${vimPlugins.nvim-treesitter-context}";
+  env.CONTEXT_GREP_NVIM_PLUGIN_DIRS = "${context-grep.nvim-plugin-grammars}:${vimPlugins.nvim-treesitter-context}";
 
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
@@ -31,13 +34,13 @@ let
       inherit cargoArtifacts;
 
       passthru.devShell = craneLib.devShell {
-        inherit CONTEXT_GREP_NVIM_PLUGIN_DIRS;
+        inherit env;
         inputsFrom = [ pkg.passthru.checks.test-harness ];
       };
 
       passthru.checks = {
         fmt = craneLib.cargoFmt {
-          inherit src;
+          inherit (commonArgs) src;
         };
         clippy = craneLib.cargoClippy (
           commonArgs
@@ -48,7 +51,7 @@ let
         test-harness =
           runCommand "context-grep-test-harness-check"
             {
-              inherit CONTEXT_GREP_NVIM_PLUGIN_DIRS;
+              inherit env;
               nativeBuildInputs = [ context-grep.test-harness ];
             }
             ''
