@@ -1,5 +1,13 @@
 # context-grep
 
+> A context-aware search tool for your terminal.
+
+[![Nix Flake Check](https://github.com/ck3d/context-grep/actions/workflows/nix.yml/badge.svg)](https://github.com/ck3d/context-grep/actions/workflows/nix.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ck3d/context-grep)
+
+---
+
 `context-grep` is a command-line tool that searches for regular expressions and extracts the surrounding code context using Neovim's Treesitter integration.
 
 ## Usage
