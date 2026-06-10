@@ -1,0 +1,66 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "type": "array",
+    "items": {
+        "$ref": "#/definitions/MatchElement"
+    },
+    "definitions": {
+        "MatchElement": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "file": {
+                    "type": "string"
+                },
+                "match": {
+                    "$ref": "#/definitions/TargetElement"
+                },
+                "target": {
+                    "$ref": "#/definitions/TargetElement"
+                },
+                "context": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TargetElement"
+                    }
+                },
+                "filetype": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "context",
+                "file",
+                "filetype",
+                "match",
+                "target"
+            ],
+            "title": "MatchElement"
+        },
+        "TargetElement": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "text": {
+                    "type": "string"
+                },
+                "line": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "language",
+                "line",
+                "text",
+                "type"
+            ],
+            "title": "TargetElement"
+        }
+    }
+}

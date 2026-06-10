@@ -1,0 +1,3 @@
+#!/bin/sh
+context-grep --format json TODO sample.lua |
+  quicktype --src-lang json --lang schema --top-level Match
