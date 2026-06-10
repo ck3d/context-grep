@@ -106,4 +106,5 @@ A match inside an injected region is understood in that injected language, and t
 
 ## Development
 
+Development requires [direnv](https://direnv.net/) to be installed in the environment.
 Use the `dev-check.sh` for iterative per package development and `nix flake check` for a full repository check.
