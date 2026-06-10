@@ -35,10 +35,10 @@ let
 
       passthru.devShell = craneLib.devShell {
         inherit env;
-        inputsFrom = [ pkg.passthru.checks.test-harness ];
+        inputsFrom = [ pkg.passthru.tests.test-harness ];
       };
 
-      passthru.checks = {
+      passthru.tests = {
         fmt = craneLib.cargoFmt {
           inherit (commonArgs) src;
         };

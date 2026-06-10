@@ -29,7 +29,7 @@ stdenv.mkDerivation (finalAttrs: {
       --prefix PATH : ${lib.makeBinPath [ jaq ]}
   '';
 
-  passthru.checks = {
+  passthru.tests = {
     shellcheck =
       runCommand "test-harness-shellcheck"
         {
@@ -42,7 +42,7 @@ stdenv.mkDerivation (finalAttrs: {
   };
 
   passthru.devShell = mkShellNoCC {
-    inputsFrom = [ finalAttrs.passthru.checks.shellcheck ];
+    inputsFrom = [ finalAttrs.passthru.tests.shellcheck ];
     packages = [
       jaq
     ];

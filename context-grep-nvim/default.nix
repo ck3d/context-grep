@@ -38,10 +38,10 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     packages = [
       neovim-unwrapped
     ];
-    inputsFrom = builtins.attrValues finalAttrs.passthru.checks;
+    inputsFrom = builtins.attrValues finalAttrs.passthru.tests;
   };
 
-  passthru.checks = {
+  passthru.tests = {
     fmt =
       runCommand "context-grep-nvim-stylua-check"
         {

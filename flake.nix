@@ -45,14 +45,14 @@
           pkgDevShells = lib.mapAttrs' (n: pkg: lib.nameValuePair "package-${n}-devShell" pkg.devShell) (
             lib.filterAttrs (n: pkg: pkg ? devShell) self.packages.${system}
           );
-          pkgChecks = lib.concatMapAttrs (
+          pkgTests = lib.concatMapAttrs (
             n: pkg:
-            lib.mapAttrs' (c: checkPkg: lib.nameValuePair "package-${n}-checks-${c}" checkPkg) (
-              pkg.passthru.checks or { }
+            lib.mapAttrs' (c: checkPkg: lib.nameValuePair "package-${n}-tests-${c}" checkPkg) (
+              pkg.passthru.tests or { }
             )
           ) self.packages.${system};
         in
-        packages // pkgDevShells // pkgChecks
+        packages // pkgDevShells // pkgTests
       );
 
       formatter = forAllSystems (system: self.legacyPackages.${system}.nixfmt-tree);
