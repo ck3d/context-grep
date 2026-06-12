@@ -31,6 +31,26 @@ SAMPLE_DIR="${SAMPLE_DIR:-$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/sample
 
 cd "$SAMPLE_DIR"
 
+# validate_schema NAME OUTPUT
+#   Checks that OUTPUT conforms to the context-grep JSON schema (SCHEMA_FILE).
+#   Prints the validation errors and exits on failure.
+validate_schema() {
+  local name="$1" output="$2"
+  local tmp
+  tmp="$(mktemp)"
+  printf '%s' "$output" >"$tmp"
+
+  if yajsv -q -s "$SCHEMA_FILE" "$tmp" >/dev/null; then
+    echo "✓ Schema: $name ($target)"
+    rm -f "$tmp"
+  else
+    echo "✗ Schema: $name ($target)"
+    yajsv -s "$SCHEMA_FILE" "$tmp"
+    rm -f "$tmp"
+    exit 1
+  fi
+}
+
 # run_test NAME QUERY FILES ASSERTION
 #   Runs context-grep and checks ASSERTION (a jaq boolean filter) against the
 #   JSON output. Prints the output and exits on failure.
@@ -49,6 +69,8 @@ run_test() {
     jaq . <<<"$output"
     exit 1
   fi
+
+  validate_schema "$name" "$output"
 }
 
 # run_failure_test NAME QUERY FILES
