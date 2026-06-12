@@ -8,5 +8,7 @@ set -x
 
 eval "$(direnv export bash)"
 
-./test-harness ..#context-grep-rs-wrapped
-./test-harness ..#context-grep-nvim
+nix build ..#context-grep-rs-wrapped
+./test-harness ./result/bin/*
+nix build ..#context-grep-nvim
+./test-harness ./result/bin/*

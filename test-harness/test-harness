@@ -3,23 +3,15 @@
 set -e
 
 if [ $# -lt 1 ]; then
-  echo "Usage: $0 <executable-or-nix-target>"
+  echo "Usage: $0 <executable-path>"
   exit 1
 fi
 
 target="$1"
 
 # If target is a relative path, resolve it to an absolute path so it still works after we change directory
-if [[ "$target" != \#* && -e "$target" ]]; then
+if [ -e "$target" ]; then
   target="$(realpath "$target")"
-fi
-
-# Build the invocation once: a nix flake target (starting with '.' or '#') is
-# run via `nix run`; anything else is treated as an executable.
-if [[ "$target" == [.\#]* ]]; then
-  cmd=(nix run "$target" --)
-else
-  cmd=("$target")
 fi
 
 # The neovim target emits JSON itself; every other target needs --format json.
@@ -60,7 +52,7 @@ run_test() {
   local output
 
   # shellcheck disable=SC2086
-  output=$("${cmd[@]}" "${extra_args[@]}" "$query" $files)
+  output=$("$target" "${extra_args[@]}" "$query" $files)
 
   if jaq -e "$assertion" >/dev/null <<<"$output"; then
     echo "✓ Success: $name ($target)"
@@ -82,7 +74,7 @@ run_failure_test() {
   local status=0
 
   # shellcheck disable=SC2086
-  "${cmd[@]}" "${extra_args[@]}" "$query" $files >/dev/null 2>&1 || status=$?
+  "$target" "${extra_args[@]}" "$query" $files >/dev/null 2>&1 || status=$?
 
   if [ "$status" -ne 0 ]; then
     echo "✓ Success: $name ($target)"
