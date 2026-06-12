@@ -176,6 +176,7 @@ local function get_node_info(node, bufnr, language)
 end
 
 local all_results = {}
+local had_error = false
 
 -- Context queries are per-language and stable, so cache them across files and
 -- across the language trees of a single file. `false` records a miss so we only
@@ -194,6 +195,7 @@ for i = 2, #args do
   local file = args[i]
   if vim.fn.filereadable(file) == 0 then
     io.stderr:write("File '" .. file .. "' does not exist or is not readable\n")
+    had_error = true
     goto next_file
   end
   local bufnr = vim.fn.bufadd(file)
@@ -297,3 +299,7 @@ for i = 2, #args do
 end
 
 io.stdout:write(vim.json.encode(all_results))
+
+if had_error then
+  os.exit(2)
+end

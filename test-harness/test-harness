@@ -51,6 +51,27 @@ run_test() {
   fi
 }
 
+# run_failure_test NAME QUERY FILES
+#   Runs context-grep and asserts it exits with a non-zero status (e.g. when a
+#   requested file does not exist). Prints the output and exits on failure.
+run_failure_test() {
+  local name="$1" query="$2" files="$3"
+  echo "Testing: $name ($target)"
+  local status=0
+
+  # shellcheck disable=SC2086
+  "${cmd[@]}" "${extra_args[@]}" "$query" $files >/dev/null 2>&1 || status=$?
+
+  if [ "$status" -ne 0 ]; then
+    echo "✓ Success: $name ($target)"
+  else
+    echo "✗ Failure: $name ($target) — expected non-zero exit code, got $status"
+    exit 1
+  fi
+}
+
+run_failure_test "missing file" "anything" "does-not-exist.lua"
+
 run_test "match this" "match this" "sample.lua" \
   '(.[0].target.text | contains("local function bar()")) and .[0].file == "sample.lua"'
 
