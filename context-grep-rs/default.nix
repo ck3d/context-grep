@@ -18,6 +18,7 @@ let
           "default.nix"
           ".envrc"
           ".gitignore"
+          "dev-shell.sh"
         ]);
     };
 

@@ -27,6 +27,7 @@ stdenv.mkDerivation (finalAttrs: {
       !(lib.elem (baseNameOf path) [
         "default.nix"
         ".envrc"
+        "dev-shell.sh"
       ]);
   };
 

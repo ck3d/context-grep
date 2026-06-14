@@ -1,6 +1,6 @@
 out ?= /usr/local
 
-.PHONY: all install format
+.PHONY: all install format check dev-check test-harness
 
 all:
 
@@ -13,3 +13,9 @@ format:
 
 check:
 	stylua --check context-grep-nvim.lua
+
+dev-check:
+	@$(MAKE) check test-harness --jobs=2
+
+test-harness:
+	test-harness ./context-grep-nvim
