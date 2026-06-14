@@ -12,6 +12,7 @@
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "context-grep-nvim";
   version = "0.1.0";
+  strictDeps = true;
 
   src = lib.cleanSourceWith {
     src = ./.;

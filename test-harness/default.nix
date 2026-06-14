@@ -18,6 +18,7 @@ in
 stdenv.mkDerivation (finalAttrs: {
   pname = "context-grep-test-harness";
   version = "0.1.0";
+  strictDeps = true;
 
   src = lib.cleanSourceWith {
     src = ./.;

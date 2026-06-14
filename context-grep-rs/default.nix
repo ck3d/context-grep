@@ -9,6 +9,7 @@
 }:
 let
   commonArgs = {
+    strictDeps = true;
     src = lib.cleanSourceWith {
       src = ./.;
       filter =

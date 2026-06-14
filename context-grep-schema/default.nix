@@ -6,6 +6,7 @@
 }:
 stdenvNoCC.mkDerivation {
   name = "context-grep.schema.json";
+  strictDeps = true;
 
   src = lib.cleanSourceWith {
     src = ./.;
