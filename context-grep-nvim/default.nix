@@ -8,7 +8,13 @@
   mkShellNoCC,
   stylua,
   runCommand,
+  bashNonInteractive,
 }:
+let
+  runtimeDeps = [
+    neovim-unwrapped
+  ];
+in
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "context-grep-nvim";
   version = "0.1.0";
@@ -24,14 +30,24 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       ]);
   };
 
-  nativeBuildInputs = [ makeWrapper ];
+  buildInputs = [
+    bashNonInteractive
+  ]
+  ++ runtimeDeps;
+
+  nativeBuildInputs = [
+    makeWrapper
+    stylua
+  ];
+
+  doCheck = true;
 
   env.CONTEXT_GREP_NVIM_PLUGIN_DIRS = "${context-grep.nvim-plugin-grammars}:${vimPlugins.nvim-treesitter-context}";
 
   postFixup = ''
     wrapProgram $out/bin/context-grep-nvim \
       --set CONTEXT_GREP_NVIM_PLUGIN_DIRS "$CONTEXT_GREP_NVIM_PLUGIN_DIRS" \
-      --prefix PATH : ${lib.makeBinPath [ neovim-unwrapped ]}
+      --prefix PATH : ${lib.makeBinPath runtimeDeps}
   '';
 
   passthru.devShell = mkShellNoCC {
@@ -43,15 +59,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   };
 
   passthru.tests = {
-    fmt =
-      runCommand "context-grep-nvim-stylua-check"
-        {
-          nativeBuildInputs = [ stylua ];
-        }
-        ''
-          stylua --config-path ${./.stylua.toml} --check ${./context-grep-nvim.lua}
-          touch $out
-        '';
     test-harness =
       runCommand "context-grep-nvim-test-harness-check"
         {

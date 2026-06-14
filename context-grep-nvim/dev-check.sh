@@ -8,6 +8,5 @@ set -x
 
 eval "$(direnv export bash)"
 
-stylua --check context-grep-nvim.lua
-
+make check
 test-harness ./context-grep-nvim

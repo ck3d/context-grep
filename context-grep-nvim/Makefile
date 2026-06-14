@@ -10,3 +10,6 @@ install:
 
 format:
 	stylua context-grep-nvim.lua
+
+check:
+	stylua --check context-grep-nvim.lua
