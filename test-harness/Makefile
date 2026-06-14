@@ -1,8 +1,11 @@
 out ?= /usr/local
 
-.PHONY: all install
+.PHONY: all check install
 
 all:
+
+check:
+	shellcheck test-harness
 
 install:
 	mkdir -p $(out)/bin $(out)/share/test-harness

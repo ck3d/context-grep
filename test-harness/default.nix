@@ -1,12 +1,11 @@
 {
   lib,
   stdenv,
-  mkShellNoCC,
   makeWrapper,
+  bashNonInteractive,
   jaq,
   yajsv,
   shellcheck,
-  runCommand,
   context-grep,
 }:
 let
@@ -30,11 +29,21 @@ stdenv.mkDerivation (finalAttrs: {
       ]);
   };
 
+  buildInputs = [
+    bashNonInteractive
+  ];
+
+  doCheck = true;
+
   env = {
     SCHEMA_FILE = toString context-grep.context-grep-schema;
   };
 
-  nativeBuildInputs = [ makeWrapper ] ++ runtimeDeps;
+  nativeBuildInputs = [
+    makeWrapper
+    shellcheck
+  ]
+  ++ runtimeDeps;
 
   postFixup = ''
     wrapProgram $out/bin/test-harness \
@@ -42,26 +51,6 @@ stdenv.mkDerivation (finalAttrs: {
       --set SCHEMA_FILE "$SCHEMA_FILE" \
       --prefix PATH : ${lib.makeBinPath runtimeDeps}
   '';
-
-  passthru.tests = {
-    shellcheck =
-      runCommand "test-harness-shellcheck"
-        {
-          nativeBuildInputs = [ shellcheck ];
-        }
-        ''
-          shellcheck ${./test-harness}
-          touch $out
-        '';
-  };
-
-  passthru.devShell = mkShellNoCC {
-    inputsFrom = [
-      finalAttrs
-    ]
-    ++ builtins.attrValues finalAttrs.passthru.tests;
-    inherit (finalAttrs) env;
-  };
 
   meta.mainProgram = "test-harness";
 })

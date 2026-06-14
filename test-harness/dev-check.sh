@@ -8,6 +8,7 @@ set -x
 
 eval "$(direnv export bash)"
 
+make check
 nix build ..#context-grep-rs-wrapped
 ./test-harness ./result/bin/*
 nix build ..#context-grep-nvim
