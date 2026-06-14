@@ -52,10 +52,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
   passthru.devShell = mkShellNoCC {
     inherit (finalAttrs) env;
-    packages = [
-      neovim-unwrapped
-    ];
-    inputsFrom = builtins.attrValues finalAttrs.passthru.tests;
+    inputsFrom = [ finalAttrs ] ++ builtins.attrValues finalAttrs.passthru.tests;
   };
 
   passthru.tests = {

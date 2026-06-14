@@ -2,5 +2,5 @@
 set -eux
 
 for script in ./*/dev-check.sh; do
-    $script
+    nix develop .#dev-check --unset PATH --command "$script"
 done

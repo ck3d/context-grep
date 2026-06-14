@@ -21,3 +21,6 @@ jobs:
 
       - name: Run Nix Flake Check
         run: nix flake check
+
+      - name: Run dev check
+        run: ./dev-check.sh

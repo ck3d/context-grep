@@ -7,6 +7,7 @@
   yajsv,
   shellcheck,
   context-grep,
+  mkShellNoCC,
 }:
 let
   runtimeDeps = [
@@ -44,6 +45,12 @@ stdenv.mkDerivation (finalAttrs: {
     shellcheck
   ]
   ++ runtimeDeps;
+
+  passthru.devShell = mkShellNoCC {
+    inherit (finalAttrs) env;
+    packages = [ context-grep.context-grep-rs-wrapped ];
+    inputsFrom = [ finalAttrs ];
+  };
 
   postFixup = ''
     wrapProgram $out/bin/test-harness \

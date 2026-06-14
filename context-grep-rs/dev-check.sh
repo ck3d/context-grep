@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$DIR"
+cd "$(dirname "${BASH_SOURCE[0]}")"
+direnv allow .
+eval "$(direnv export bash)"
 
 set -x
-
-eval "$(direnv export bash)"
 
 cargo fmt --check
 
