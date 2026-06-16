@@ -63,7 +63,16 @@
           ) self.packages.${system};
           devShells = lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") self.devShells.${system};
         in
-        packages // pkgDevShells // pkgTests // devShells
+        packages
+        // pkgDevShells
+        // pkgTests
+        // devShells
+        // {
+          format = self.legacyPackages.${system}.runCommandLocal "format" { } ''
+            ${lib.getExe self.formatter.${system}} --ci ${self}
+            touch $out
+          '';
+        }
       );
 
       formatter = forAllSystems (system: self.legacyPackages.${system}.nixfmt-tree);
