@@ -19,6 +19,7 @@ let
           ".envrc"
           ".gitignore"
           "dev-shell.sh"
+          "Makefile"
         ]);
     };
 
