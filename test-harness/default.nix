@@ -1,6 +1,6 @@
 {
   lib,
-  stdenv,
+  stdenvNoCC,
   makeWrapper,
   bashNonInteractive,
   jaq,
@@ -15,7 +15,7 @@ let
     yajsv
   ];
 in
-stdenv.mkDerivation (finalAttrs: {
+stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "context-grep-test-harness";
   version = "0.1.0";
   strictDeps = true;
