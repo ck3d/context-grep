@@ -38,16 +38,6 @@
 
       packages = forAllSystems (system: self.legacyPackages.${system}.context-grep);
 
-      devShells = forAllSystems (system: {
-        dev-check = self.legacyPackages.${system}.mkShellNoCC {
-          name = "dev-check-env";
-          packages = with self.legacyPackages.${system}; [
-            nix
-            direnv
-          ];
-        };
-      });
-
       checks = forAllSystems (
         system:
         let
@@ -61,7 +51,7 @@
               pkg.passthru.tests or { }
             )
           ) self.packages.${system};
-          devShells = lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") self.devShells.${system};
+          devShells = lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") self.devShells.${system} or { };
         in
         packages
         // pkgDevShells

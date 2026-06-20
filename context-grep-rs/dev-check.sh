@@ -2,5 +2,4 @@
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
-direnv allow
-exec direnv exec . make dev-check
+exec nix develop ..#context-grep-rs.devShell --command make dev-check
