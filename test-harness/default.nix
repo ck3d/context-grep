@@ -38,7 +38,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   doCheck = true;
 
   env = {
-    SCHEMA_FILE = toString context-grep.context-grep-schema;
+    SCHEMA_FILE = "${../schema.json}";
   };
 
   nativeBuildInputs = [
@@ -56,7 +56,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   postFixup = ''
     wrapProgram $out/bin/test-harness \
       --set SAMPLE_DIR "$out/share/test-harness" \
-      --set SCHEMA_FILE "$SCHEMA_FILE" \
+      --set SCHEMA_FILE "${finalAttrs.env.SCHEMA_FILE}" \
       --prefix PATH : ${lib.makeBinPath runtimeDeps}
   '';
 

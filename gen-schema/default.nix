@@ -3,9 +3,10 @@
   context-grep,
   quicktype,
   stdenvNoCC,
+  runCommand,
 }:
-stdenvNoCC.mkDerivation {
-  name = "context-grep.schema.json";
+stdenvNoCC.mkDerivation (finalAttrs: {
+  name = "gen-schema.json";
   strictDeps = true;
 
   src = lib.cleanSourceWith {
@@ -23,5 +24,10 @@ stdenvNoCC.mkDerivation {
     context-grep.context-grep-rs-wrapped
   ];
 
-  doCheck = true;
-}
+  passthru.tests = {
+    diff = runCommand "gen-schema.diff" { } ''
+      diff -u ${../schema.json} ${finalAttrs.finalPackage}
+      touch $out
+    '';
+  };
+})
