@@ -51,6 +51,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       --prefix PATH : ${lib.makeBinPath runtimeDeps}
   '';
 
+  passthru.env = finalAttrs.env;
+
   passthru.devShell = mkShellNoCC {
     inherit (finalAttrs) env;
     inputsFrom = [ finalAttrs ] ++ builtins.attrValues finalAttrs.passthru.tests;
@@ -60,7 +62,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     test-harness =
       runCommand "context-grep-nvim-test-harness-check"
         {
-          inherit (finalAttrs.env) CONTEXT_GREP_NVIM_PLUGIN_DIRS;
+          inherit (finalAttrs) env;
           nativeBuildInputs = [ context-grep.test-harness ];
         }
         ''

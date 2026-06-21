@@ -38,6 +38,21 @@
 
       packages = forAllSystems (system: self.legacyPackages.${system}.context-grep);
 
+      devShells = forAllSystems (
+        system:
+        let
+          contextGrepDrvs = self.packages.${system};
+        in
+        {
+          default = self.legacyPackages.${system}.mkShellNoCC {
+            inputsFrom = lib.mapAttrsToList (_name: drv: drv.passthru.devShell or drv) contextGrepDrvs;
+            env = lib.foldl' (acc: drv: acc // (drv.passthru.env or { })) { } (
+              builtins.attrValues contextGrepDrvs
+            );
+          };
+        }
+      );
+
       checks = forAllSystems (
         system:
         let

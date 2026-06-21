@@ -36,6 +36,8 @@ let
     // {
       inherit cargoArtifacts;
 
+      passthru.env = env;
+
       passthru.devShell = craneLib.devShell {
         inherit env;
         inputsFrom = [ pkg.passthru.tests.test-harness ];
